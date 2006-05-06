@@ -1,0 +1,18 @@
+yasa source trees
+-----------------
+
+** You probably only want to check out the trunk directory tree! **
+
+
+Directory layout:
+
+  trunk    - main development tree
+  tags     - tagged trees
+  branches - named branches
+
+For background information about this "TTB directories" layout  see 
+
+  Version Control with Subversion 
+  Choosing a Repository Layout
+  
+  http://svnbook.red-bean.com/
