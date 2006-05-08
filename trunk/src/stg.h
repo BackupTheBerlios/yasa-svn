@@ -1,5 +1,5 @@
 /*-
- * YASA (Yet Another Simulated Annealing)
+ * STG (Standard Task Graph) Format
  *
  * Copyright (c) 2006 Marc van Woerkom <http://yasa.berlios.de>
  * All rights reserved.
@@ -26,29 +26,33 @@
  * SUCH DAMAGE.
  */
 
-#include <stdio.h>
+/* standard task graph */
+struct stg {
+	int             procs;    /* Number of processors */
+	int             tasks;    /* Number of tasks */  
+	struct stg_task *task[];  /* Array of task entries */ 
+};
 
-#include "stg.h"
+/* per task */
+struct stg_task {
+	int             index;    /* Task index */
+	int             ptime;    /* Computation time */
+	int             preds;    /* Number of predecessors */
+	struct stg_pred *pred[];  /* Array of predecessor entries */
+};
+
+/* per predecessor */
+struct stg_pred {
+	int index;  /* Predecessor index */
+	int ctime;  /* Communication time */
+};
 
 
-/*
- * Yasa computes (near) optimal schedules for a given taskgraph.
- *
- * This is a NP hard problem. To deal with the large combinatorial
- * search space it uses the simulated annealing meta heuristics.
- *
- * It can make use of processor clusters through the pvm library.
- */
-int 
-main(int argc, char* argv[]) 
-{
-	struct stg *tg;
+/* read stg file and allocate task graph data structure */ 
+extern struct stg *new_task_graph_from_file(char *fn);
 
-	printf("hello, this is %s!\n", argv[0]);
-	
-	tg = new_task_graph_from_file("simple.stg");
-	print_task_graph(tg);
-	free_task_graph(tg);
-	
-	return 0;
-}
+/* print task graph on standard output */
+extern void print_task_graph(struct stg *tg);
+
+/* free task graph */
+extern void free_task_graph(struct stg *tg);

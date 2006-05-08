@@ -1,0 +1,9 @@
+HACKORDNUNG -- yasa source file style guide
+
+Please consider FreeBSD's style(9) man page:
+
+  http://www.FreeBSD.org/cgi/man.cgi?query=style&sektion=9
+
+
+Don't forget to add yourself to the copyright section
+of those files you modified!
