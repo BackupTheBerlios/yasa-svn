@@ -1,5 +1,5 @@
 /*-
- * YASA (Yet Another Simulated Annealing)
+ * Worst Case Solver
  *
  * Copyright (c) 2006 Marc van Woerkom <http://yasa.berlios.de>
  * All rights reserved.
@@ -27,34 +27,55 @@
  */
 
 #include <stdio.h>
+#include <string.h>
 
+#include "ssf.h"
+#include "stg.h"
 #include "worstcase.h"
 
 
 /*
- * Yasa computes (near) optimal schedules for a given taskgraph.
- *
- * This is a NP hard problem. To deal with the large combinatorial
- * search space it uses the simulated annealing meta heuristics.
- *
- * It can make use of processor clusters through the pvm library.
+ * The worst case solver assigns all tasks to one processor.
  */
 int
-main(int argc, char* argv[])
+worstcase_solver(char *stg_filename, char *ssf_filename)
 {
-	int solver;
-	int rc;
+	int malloced;
+	int freed;
 
-	printf("** Hello, this is %s!\n", argv[0]);
-	solver = 0;
+	struct stg *tg;
+	struct ssf_status *status;
+	struct ssf *schedule;
 
-	switch (solver) {
-	case 0:
-		rc = worstcase_solver("simple.stg", "simple-worstcase.ssf");
-		break;
-	default:
-		printf("unknown solver %d!\n", solver);
-		rc = 1;
+
+	printf("** Worst Case Solver\n");
+
+        /* Allocate data structures. */
+	malloced = 0;
+	freed = 0;
+        tg = new_task_graph_from_file(stg_filename, &malloced);
+	status = new_status(&malloced);
+	strncpy(status->name, "YASA worstcase", 20);
+	schedule = new_schedule(tg, &malloced);
+	printf("malloced %d bytes\n", malloced);
+
+	/* Solve. */
+	print_task_graph(tg);
+	printf("twiddle. twiddle, crunch, crunch..\n");
+	print_schedule(schedule);
+	write_schedule_to_file(ssf_filename, schedule, status);
+
+	/* Free data structures. */
+	free_schedule(schedule, &freed);
+	free_status(status, &freed);
+	free_task_graph(tg, &freed);
+	printf("freed %d bytes => ", freed);
+	if (malloced == freed)
+		printf("OK.\n");
+	else {
+		printf("Error: malloced != freed!\n");
+		return (1);
 	}
-	return (rc);
+
+	return (0);
 }

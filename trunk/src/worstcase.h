@@ -1,5 +1,5 @@
 /*-
- * YASA (Yet Another Simulated Annealing)
+ * Worst Case Solver
  *
  * Copyright (c) 2006 Marc van Woerkom <http://yasa.berlios.de>
  * All rights reserved.
@@ -26,35 +26,11 @@
  * SUCH DAMAGE.
  */
 
-#include <stdio.h>
+#if (!defined(_WORSTCASE_H_))
+#define _WORSTCASE_H_
 
-#include "worstcase.h"
+
+extern int worstcase_solver(char *stg_filename, char *ssf_filename);
 
 
-/*
- * Yasa computes (near) optimal schedules for a given taskgraph.
- *
- * This is a NP hard problem. To deal with the large combinatorial
- * search space it uses the simulated annealing meta heuristics.
- *
- * It can make use of processor clusters through the pvm library.
- */
-int
-main(int argc, char* argv[])
-{
-	int solver;
-	int rc;
-
-	printf("** Hello, this is %s!\n", argv[0]);
-	solver = 0;
-
-	switch (solver) {
-	case 0:
-		rc = worstcase_solver("simple.stg", "simple-worstcase.ssf");
-		break;
-	default:
-		printf("unknown solver %d!\n", solver);
-		rc = 1;
-	}
-	return (rc);
-}
+#endif

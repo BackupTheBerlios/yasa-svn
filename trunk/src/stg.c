@@ -34,45 +34,259 @@
 #include "stg.h"
 
 
-/* read stg file and allocate task graph data structure */ 
+static void read_line_from_file(FILE *fd, char *line, int line_size, int *line_number, int ignore);
+
+
+/*
+ * Read stg file and allocate memory for the task graph data structure.
+ */
 struct stg*
-new_task_graph_from_file(char *fn)
+new_task_graph_from_file(char *fn, int *malloced)
 {
 	FILE *fd;
+
+	int msize;
 
 	struct stg *tg;
 
 	int line_number;
 	char line[2048];
-	char *result;
-	int is_comment;
 
 	int count;
+
 	int tasks;
 	int procs;
 
         int t;
+	struct stg_task* ptask;
+	int tindex;
+        int ptime;
+	int preds;
+
+	int p;
+	struct stg_pred* ppred;
+	int ctime;
+
 
 	printf("reading '%s' .. ", fn);
-	fd = fopen(fn, "r");
-	if (fd == NULL) {
+	if ((fd = fopen(fn, "r")) == NULL) {
 		printf("can't open '%s'!\n", fn);
-		exit(EX_DATAERR);
+		exit(EX_IOERR);
 	}
 
-	tg = malloc(sizeof(struct stg));
-	if (tg == NULL) {
+	/* Allocate header structure. */
+	msize = sizeof(struct stg);
+	if ((tg = malloc(msize)) == NULL) {
 		printf("can't allocate memory!\n");
 		exit(EX_OSERR);
 	}
+	*malloced += msize;
 	
-	/* read first (non-comment) line */
+	/* Read first (non-comment) line. */
 	line_number = 0;
+	read_line_from_file(fd, line, sizeof(line), &line_number, 1);
+
+	/* Parse line for arguments. */
+	count = sscanf(line, "%d %d", &tasks, &procs);
+	switch (count) {
+	case EOF:
+	case 0:
+		printf("didn't find any number on line %d!\n", line_number);
+		exit(EX_DATAERR);
+		/* NOTREACHED */
+	case 1:
+		printf("found 'tasks' (%d) but not 'procs' on line %d!\n",
+		       tasks, line_number);
+		exit(EX_DATAERR);
+		/* NOTREACHED */
+	case 2:
+		if (procs <= 0) {
+			printf("'procs' (%d) is negative or zero on line %d!\n",
+			       procs, line_number);
+			exit(EX_DATAERR);
+			/* NOTREACHED */
+		}
+		if (tasks < 0) {
+			printf("'tasks' (%d) is negative on line %d!\n",
+			       tasks, line_number);
+			exit(EX_DATAERR);
+			/* NOTREACHED */
+		}
+		tg->procs = procs;
+		tg->tasks = tasks;
+		break;
+	default:
+		printf("internal error while reading line %d!\n",
+		       line_number);
+		exit(EX_SOFTWARE);
+		/* NOTREACHED */
+	}
+
+	/* Allocate memory for task information. */
+	msize = tasks * sizeof(struct stg_task*);
+	if ((tg->task = malloc(msize)) == NULL) {
+		printf("can't allocate memory!\n");
+		exit(EX_OSERR);
+	}
+	*malloced += msize;
+
+	/* Read tasks. */
+	for (t = 0; t < tasks; t++) {
+		/* Allocate. */
+		msize = sizeof(struct stg_task);
+		if ((ptask = malloc(msize)) == NULL) {
+			printf("can't allocate memory!\n");
+			exit(EX_OSERR);
+		}
+		*malloced += msize;
+		tg->task[t] = ptask;
+
+                /* Read task line. */
+		read_line_from_file(fd, line, sizeof(line), &line_number, 1);
+
+                /* Parse. */
+                count = sscanf(line, "%d %d %d", &tindex, &ptime, &preds);
+		switch (count) {
+		case EOF:
+		case 0:
+			printf("didn't find any number on line %d!\n", line_number);
+			exit(EX_DATAERR);
+			/* NOTREACHED */
+		case 1:
+			printf("found 'tindex' (%d) but not 'ptime' and 'preds' on line %d!\n",
+			       tindex, line_number);
+			exit(EX_DATAERR);
+			/* NOTREACHED */
+		case 2:
+			printf("found 'tindex' (%d) and 'ptime' (%d) but not 'preds' on line %d!\n",
+			       tindex, ptime, line_number);
+			exit(EX_DATAERR);
+			/* NOTREACHED */
+		case 3:
+			if (tindex != t) {
+				printf("read 'tindex' (%d) but expected value %d on line %d!\n",
+				       tindex, t, line_number);
+				exit(EX_DATAERR);
+				/* NOTREACHED */
+			}
+			if (ptime < 0) {
+				printf("'ptime' (%d) is negative on line %d!\n",
+				       ptime, line_number);
+				exit(EX_DATAERR);
+				/* NOTREACHED */
+			}
+			if (preds < 0 || preds >= tasks) {
+				printf("'preds' (%d) is out of bounds on line %d!\n",
+				       preds, line_number);
+				exit(EX_DATAERR);
+				/* NOTREACHED */
+			}
+			ptask->tindex = tindex;
+			ptask->ptime = ptime;
+			ptask->preds = preds;
+			break;
+		default:
+			printf("internal error while reading line %d!\n",
+			       line_number);
+			exit(EX_SOFTWARE);
+			/* NOTREACHED */
+		}
+
+		/* Allocate memory for predecessor information. */
+		msize = ptask->preds * sizeof(struct stg_pred*);
+		if ((ptask->pred = malloc(msize)) == NULL) {
+			printf("can't allocate memory!\n");
+			exit(EX_OSERR);
+		}
+		*malloced += msize;
+
+		/* Read preds. */
+		for (p = 0; p < ptask->preds; p++) {
+			/* Allocate. */
+			msize = sizeof(struct stg_pred);
+			if ((ppred = malloc(msize)) == NULL) {
+				printf("can't allocate memory!\n");
+				exit(EX_OSERR);
+			}
+			*malloced += msize;
+			ptask->pred[p] = ppred;
+
+			/* Read preds line. */
+			read_line_from_file(fd, line, sizeof(line), &line_number, 1);
+			
+			/* Parse. */
+			count = sscanf(line, "%d %d", &tindex, &ctime);
+
+			switch (count) {
+			case EOF:
+			case 0:
+				printf("didn't find any number on line %d!\n", line_number);
+				exit(EX_DATAERR);
+				/* NOTREACHED */
+			case 1:
+				printf("found 'tindex' (%d) but not 'ctime' on line %d!\n",
+				       tindex, line_number);
+				exit(EX_DATAERR);
+				/* NOTREACHED */
+			case 2:
+				if (tindex < 0 || tindex >= tasks) {
+					printf("'tindex' (%d) is out of bounds on line %d!\n",
+					       tindex, line_number);
+					exit(EX_DATAERR);
+					/* NOTREACHED */
+				}
+				if (ctime < 0) {
+					printf("'ctime' (%d) is negative on line %d!\n",
+					       ctime, line_number);
+					exit(EX_DATAERR);
+					/* NOTREACHED */
+				}
+				ppred->tindex = tindex;
+				ppred->ctime = ctime;
+				break;
+			default:
+				printf("internal error while reading line %d!\n",
+				       line_number);
+				exit(EX_SOFTWARE);
+				/* NOTREACHED */
+			}
+		}
+	}
+
+	/*
+         * We expect the status line to be the first #-comment line behind the
+	 * task graph definitions.
+         */
+	read_line_from_file(fd, line, sizeof(line), &line_number, 0);
+
+	/* Finish reading. */
+	fclose(fd);
+	printf("done. (read %d lines)\n", line_number);
+
+	/* Was there a status line? */
+	if (line) {
+		printf("old status: [%s]\n", line);
+		/* .. */
+	}
+
+	return (tg);
+}
+
+
+/*
+ * Read a line from file 'fd' into buffer 'line', update line_number,
+ * ignore '#'-comments if 'ignore' is not 0.
+ */
+static void
+read_line_from_file(FILE *fd, char *line, int line_size, int *line_number, int ignore)
+{
+	char *s;
+	int len;
+
 	do {
-		line_number++;
-		result = fgets(line, sizeof(line), fd);
-		if (result == NULL) {
-			if (feof(fd)) { 
+		(*line_number)++;
+		if (fgets(line, line_size, fd) == NULL) {
+			if (feof(fd)) {
 				printf("unexpected end of file!\n");
 				exit(EX_DATAERR);
 			} else {
@@ -80,60 +294,94 @@ new_task_graph_from_file(char *fn)
 				exit(EX_IOERR);
 			}
 		}
-		/* a line starting with '#' is a comment */
-		is_comment = ((strlen(result) > 0) && (result[0] == '#'));
-	} while (is_comment);
-
-	/* parse */
-	count = sscanf(line, "%d %d", &tasks, &procs); 
-	switch (count) {
-	case EOF:
-	case 0:
-		printf("didn't find any number on line %d!\n", line_number);
-		exit(EX_DATAERR);
-	case 1:
-		printf("found 'tasks' (%d), but not 'procs' on line %d!\n", 
-		       tasks, line_number);
-		exit(EX_DATAERR);
-	case 2:
-		tg->procs = procs;
-		tg->tasks = tasks;
-		break;
-	default:
-		printf("impossible error on line %d!\n", line_number);
-	}
-
-	/* read tasks */
-	for (t = 0; t < tasks; t++) {
-	
-	}
-
-	/* finish */
-	fclose(fd);
-	printf("done. (read %d lines)\n", line_number);
-	return tg;
+		/* Ignore '#'-comment lines (if requested). */
+		if (ignore && (s = strchr(line, '#')) != NULL)
+			line[s - line] = '\0';  /* Discard comment. */
+		len = strlen(line);
+	} while (len == 0);
 }
 
 
-/* print task graph on standard output */
+/*
+ * Print task graph on standard output.
+ */
 void
-print_task_graph(struct stg *tg) 
+print_task_graph(struct stg *tg)
 {
+	int tasks;
+	int t;
+	struct stg_task *ptask;
+
+	int preds;
+	int p;
+	struct stg_pred *ppred;
+
 	if (tg == NULL) {
-		printf("can't print tg (invalid pointer)");
+		printf("Error: can't print tg (invalid pointer)\n");
 		return;
 	}
-	printf("procs: %d\n", tg->procs);
-	printf("tasks: %d\n", tg->tasks);
-	/* etc */
+	printf("tg = [\n");
+	/* header */
+	printf("  procs: %d\n", tg->procs);
+	tasks = tg->tasks;
+	printf("  tasks: %d\n", tasks);
+	/* tasks */
+	for (t = 0; t < tasks; t++) {
+		ptask = tg->task[t];
+		preds = ptask->preds;
+		printf("  task %d: ptime = %d, preds = %d\n",
+		       ptask->tindex, ptask->ptime, preds);
+		/* predecessors */
+		for (p = 0; p < preds; p++) {
+			ppred = ptask->pred[p];
+			printf("    pred %d: task = %d, ctime = %d\n",
+			       p, ppred->tindex, ppred->ctime);
+		}
+	}
+	printf("]\n");
 }
 
 
-/* free task graph */
+/*
+ * Free task graph.
+ */
 void
-free_task_graph(struct stg *tg)
+free_task_graph(struct stg *tg, int *freed)
 {
-	/* free preds */
-	/* free tasks */
-	/* free head */
+	int tasks;
+	int t;
+	struct stg_task *ptask;
+
+	int preds;
+	int p;
+	struct stg_pred *ppred;
+
+	tasks = tg->tasks;
+	for (t = 0; t < tasks; t++) {
+		ptask = tg->task[t];
+		preds = ptask->preds;
+		for (p = 0; p < preds; p++) {
+			/* Free pred info. */
+			ppred = ptask->pred[p];
+			*freed += sizeof(struct stg_pred);
+			free(ppred);
+		}
+		/* Free array of pred info pointers. */
+                *freed += preds * sizeof(struct stg_pred*);
+                free(ptask->pred);
+
+		/* Free task info. */
+		*freed += sizeof(struct stg_task);
+		free(ptask);
+	}
+	/* Free array of task info pointers. */
+	*freed += tasks * sizeof(struct stg_task*);
+	free(tg->task);
+
+	/* Free tg header. */
+	*freed += sizeof(struct stg);
+	free(tg);
+
+	/* Ensure that the given pointer points nowhere. */
+	tg = NULL;
 }

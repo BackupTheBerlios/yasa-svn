@@ -9,7 +9,7 @@ LDFLAGS=
 
 # program and its parts
 SRCS = yasa.c
-OBJS = stg.o yasa.o
+OBJS = ssf.o stg.o worstcase.o yasa.o
 LIBS =
 
 
@@ -25,7 +25,7 @@ clean:
 	-rm -f yasa $(OBJS)
 
 distclean: clean
-	-rm -f *~
+	-rm -f *~ *.core
 
 # object dependencies
 yasa: $(OBJS)
@@ -35,4 +35,7 @@ yasa: $(OBJS)
 	$(CC) $(CFLAGS) -c $<
 
 # header dependencies
+ssf.c: ssf.h stg.h
 stg.c: stg.h
+worstcase.c: ssf.h stg.h worstcase.h
+yasa.c: worstcase.h
