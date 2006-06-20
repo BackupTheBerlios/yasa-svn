@@ -1,0 +1,93 @@
+\documentclass[11pt,a4paper]{report}
+\usepackage{fullpage}
+
+\author{G\"unther Bachfischer \\
+        Harald Krau\ss{} \\
+	Florian Kr\"usch \\
+	Marc van Woerkom \\
+        \\
+        http://yasa.berlios.de}
+       
+\title{\textbf{YASA}\\
+       {\Large Yet Another Simulated Annealing}\thanks{Developped during the 
+       {\em Fachpraktikum 01597: Parallel Programming} 
+       at FernUniversit\"at in Hagen, summer 2006}}
+
+%\date{18.\ Mai 2006}
+
+
+\begin{document}
+\maketitle
+
+\chapter{Introduction}
+
+The YASA Project uses the {\em Simulated Annealing} metaheuristic to determine
+near-optimal schedules for a given task graph with communication costs.
+This metaheuristic was inferred from the domain of statistical physics,
+where the process of annealing in solids can be interpreted as an optimization
+procedure yielding thermal equilibrium \cite{Kirkpatrick1983}.
+
+\section{Task Graphs}
+A {\em task graph} is a directed graph $G = (V, E)$ where the set of
+nodes $V$ consists of {\em tasks} and where there is an edge $e = (v_i, v_j)$
+between two nodes $v_i$ and $v_j$ if task $v_i$ needs to have been computed 
+before the computation of task $v_j$ may start, 
+or short: if $v_j$ depends on $v_i$. 
+Nodes are labeled with the time needed for computation.
+Task graphs with {\em communication costs} have edges that are labeled with 
+the time needed for transferring the computation results between the 
+incident nodes, resulting in minimum time gaps between $v_i$ and $v_j$.
+
+% image of task graph
+
+\begin{verbatim}
+# first.stg
+        6       2
+        0       3       0
+        1       5       1
+                                0       2
+        2       2       1
+                                0       1
+        3       2       1
+                                0       3
+        4       4       1
+                                0       4
+        5       1       4
+                                1       2
+                                2       3
+                                3       1
+                                4       2
+\end{verbatim}
+
+\section{Schedules}
+
+% Explanation
+
+% image
+
+% file
+
+
+\section{Simulated Annealing}
+
+According to \cite{Kirkpatrick1983} four ingredients are needed to simulate
+annealing of a combinatorial optimization problem:
+\begin{enumerate}
+\item A concise description of a configuration of the system,
+\item a random generator of {\em moves} or rearrangements of the elements
+      in a configuration,
+\item a quantitative objective function containing the trade--offs that
+      have to be made and 
+\item an annealing schedule of the temperatures and length of times for
+      which the system is to be evolved. 
+\end{enumerate} 
+
+\begin{thebibliography}{99}
+
+\bibitem{Kirkpatrick1983} Kirkpatrick, S., C.\ D.\ Gelatt, Jr.\ and M.\ P.\ Vecchi:
+\emph{Optimization by Simulated Annealing},
+Science, Volume~220, Number~4598, p.~671, 1983
+
+\end{thebibliography}
+
+\end{document}

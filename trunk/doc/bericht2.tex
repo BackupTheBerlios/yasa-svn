@@ -1,0 +1,162 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[german]{babel}
+\usepackage{fullpage}
+
+\author{G\"unther Bachfischer \\
+        Harald Krau\ss{} \\
+	Florian Kr\"usch \\
+	Marc van Woerkom}
+       
+\title{\textbf{Monatsbericht Nr.\ 2}\\
+       {\normalsize Gruppe Simulated Annealing} \\
+       {\small Fachpraktikum 01597 Parallel Programming} \\
+       {\small FernUniversit\"at in Hagen, SS 2006}}
+
+\date{19.\ Juni 2006}
+
+
+\begin{document}
+\maketitle
+
+\section{Organisatorisches}
+Wir sind bis heute nicht sicher eine geeignete indirekte Repr"asentation
+f"ur Schedules gefunden zu haben, welche eine effiziente N"aherungsl"osung
+des Problems erm"oglicht, also insbesonders, dass Taskgraphen mit bis zu 
+250 Tasks bew"altigt werden k"onnen.
+Daher hatten wir uns vor ca.\ 2 Wochen in zwei Teams aufgeteilt: 
+\begin{itemize}
+\item Ein Team pirscht vor und leistet das an Vorarbeit
+      f"ur die Parallelisierung, was ohne Detailkenntnis
+      der Struktur von Konfigurationen und Suchraum m"oglich
+      ist.
+\item Ein Team versucht weiterhin eine geeignete Repr"asentation zu finden,
+      um die sequentielle Implementierung der SA Metaheuristik 
+      abzuschliessen. 
+\end{itemize}
+
+\section{Struktur von Konfigurationen und Suchraum}
+Es ist unstrittig, dass nicht alle Informationen eines Schedules
+(direkte Repr"asentation) f"ur die Suche mit Hilfe der SA Metaheuristik
+ben"otigt werden, vielmehr ist eine Teilmenge dieser Daten gefragt,
+evt. in transformierter Form, auf der effektiv mutiert und
+gesucht werden kann und aus der erst gegen Ende des Verfahrens
+die direkte Repr"asentation gewonnen werden kann.\\
+
+\noindent
+Hier sind wir zun"achst etwas zu radikal gewesen: Die Annahme war,
+dass das Gesamtproblem in zwei Teile zerf"allt:
+\begin{enumerate}
+\item Der Bestimmung der Abarbeitungsreihenfolge (also eine 
+      Liste von Tasks) und
+\item der Zuordnung der Tasks auf die Prozessoren (sog.\ Mapping),
+\end{enumerate}
+wobei wir davon ausgegangen sind, dass das Mapping automatisch (durch
+eine Heuristik, wie z.B. Zuteilung auf den n"achsten freien Prozessor, oder
+zuf"alliges Zuteilen auf einen freien Prozessor) erfolgen k"onnte.
+Die indirekte Repr"asentation h"atte damit lediglich aus einer
+Liste von Tasknummern bestanden. 
+Dieser Ansatz wird z.B.\ in \cite{DavidovicHansenMladenovic2001}
+verfolgt. \\
+
+\noindent
+Uns ist dann klar geworden, dass die Metaheuristik damit
+im wesentlichen auf die Reihenfolge, nicht aber auf das
+Mapping wirken w"urde. Ebenso hatten wir Hinweise von der
+Betreuung erhalten, uns st"arker mit der Literatur zu besch"aftigen,
+insb.\ \cite{KwokAhmad1999}. \\
+
+\noindent
+Wir halten aus diesem Artikel folgende Stelle f"ur uns relevant:
+\begin{quote}
+Hou et al.\ \cite{Hou1994} also proposed a
+scheduling algorithm using a genetic
+search in which each chromosome is a
+collection of lists, and each list represents
+the schedule on a distinct processor.
+Thus, each chromosome is not a
+linear structure but a two-dimensional
+structure instead. One dimension is a
+particular processor index and the other
+is the ordering of tasks scheduled on the
+processor. \\ 
+Using such an encoding
+scheme poses a restriction on the schedules
+being represented: the list of tasks
+within each processor in a schedule is
+ordered in ascending order of their topological
+height, which is defined as the
+largest number of edges from an entry
+node to the node itself. \\
+(..) \\
+In a mutation, two
+randomly chosen tasks with the same
+height are swapped in the schedule. As
+to the generation of the initial population,
+$N_p$ randomly permuted schedules
+obeying the height ordering restriction
+are generated.
+\end{quote}
+Eine Konfiguration w"urde hier aus $N_p$ vielen Tasklisten
+bestehen, wobei $N_p$ die Anzahl der Prozessoren ist.
+Damit w"are auch das Mapping der SA Metaheuristik unterworfen. \\
+
+\noindent 
+Offensichtliche elementare Mutationen w"aren horizontale Verschiebungen
+(innerhalb der Taskliste eines Prozessors) oder vertikale Verschiebungen
+(in die Taskliste eines anderen Prozessors). 
+Z.B. k"onnte man eine Mutation als Paar $(p', t')$ beschreiben, wobei $p'$
+die Nummer des neuen Prozessors und $t'$ die Platznummer innerhalb
+der dortigen Taskliste ist, wo der Task eingef"ugt werden soll. 
+Die einfachste Strategie w"are diese beiden Zahlen einfach zu w"urfeln.
+Dabei ist jeweils zu pr"ufen, ob die neue Position zul"assig ist, also 
+mit dem Taskgraphen vertr"aglich. Ein alternativer Ansatz
+w"are, wie im obigen Zitat aus \cite{Hou1994}, die neuen Positionen von
+vornherein auf g"ultige zu beschr"anken, dort mit Hilfe der topologischen
+H"ohe eines Tasks. \\
+
+\noindent
+Als Abstand schlagen wir die Anzahl der Mutationen vor.
+Diesen Ansatz findet man auch in \cite{DavidovicHansenMladenovic2001} erw"ahnt, dort
+spricht man von $k$-opt Nachbarschaftsstrukturen. \\
+
+\noindent
+Aktuell implementieren wir die SA Metaheuristik mit o.g.\ indirekter Repr"asentation.
+
+\section{Parallelisierung}
+F"ur die Parallelisierung des SA-Verfahrens wird gerade der Rahmen 
+geschaffen. \\
+
+\noindent
+Da f"ur alle drei L"osungsans"atze entweder der gesamte L"osungsraum 
+oder eine Teilmenge davon zu "ubertragen ist, stellt dies auch den ersten 
+Schritt bei der Umsetzung dar, d.h.\ die sichere Daten"ubertragung zwischen
+Master und den Slaves bzw.\ umgekehrt. 
+Der Ansatz ist dabei so allgemein zu halten, dass er f"ur alle drei Verfahren 
+dienen kann. \\
+
+\noindent
+F"ur die Variante mit den disjunkten Teilbereichen wird derzeit ein 
+Master/Slave-Ansatz implementiert.
+
+\begin{thebibliography}{99}
+\bibitem{DavidovicHansenMladenovic2001}
+Davidovic, Tatjana und Hansen, Pierre und Mladenovic, Nenad:
+\emph{Variable Neighborhood Search for Multiprocessor Scheduling Problem with Communication Delays},
+Proceedings MIC'2001 - $4^{\mbox{th}}$ Metaheuristics International Conference, 
+S.~737--741, Porto, Portugal,
+2001
+
+\bibitem{Hou1994}
+Hou, E.S.H.\ und Ansari, N.\ und Ren, H.: 
+\emph{A genetic algorithm for multiprocessor scheduling},
+IEEE Trans.\ Parallel Distrib.\ Syst.\ 5, 2 (Feb.), S.~113--120, 1994
+
+\bibitem{KwokAhmad1999} 
+Kwok, Yu-Kwong und Ahmad, Ishfaq: 
+\emph{Static Scheduling Algorithms for Allocating Directed Task Graphs to Multiprocessors},
+ACM Computing Surveys, Vol.~31, No.~4, December~1999
+
+\end{thebibliography}
+
+
+\end{document}
