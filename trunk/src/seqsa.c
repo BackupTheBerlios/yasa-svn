@@ -43,14 +43,14 @@
 int
 seqsa_solver(char *stg_filename, char *ssf_filename)
 {
-	int malloced;
-	int freed;
+    int malloced;
+    int freed;
 
     int malloced_initial;
 
-	struct stg *tg;
-	struct ssf_status *status;
-	struct ssf *schedule;
+    struct stg *tg;
+    struct ssf_status *status;
+    struct ssf *schedule;
 
     double eps;
     unsigned seed;
@@ -69,14 +69,14 @@ seqsa_solver(char *stg_filename, char *ssf_filename)
     double bf;  /* Boltzmann Factor p(alpha -> beta) */
 
 
-	printf("** Sequential Simulated Annealing Solver\n");
+    printf("** Sequential Simulated Annealing Solver\n");
 
     /* Allocate data structures. */
-	malloced = 0;
-	freed = 0;
+    malloced = 0;
+    freed = 0;
     tg = new_task_graph_from_file(stg_filename, &malloced);
-	status = new_status(&malloced);
-	strncpy(status->name, "YASA Sequential", 20);
+    status = new_status(&malloced);
+    strncpy(status->name, "YASA Sequential", 20);
 
     eps = 1e-3;
     seed = 0;
@@ -85,13 +85,13 @@ seqsa_solver(char *stg_filename, char *ssf_filename)
     alpha = NULL;
     beta = NULL;
 
-	/* Solve. */
+    /* Solve. */
     srand(seed);
-	print_task_graph(tg);
+    print_task_graph(tg);
 
     malloced_initial = 0;
     create_initial_solution(tg, alpha, &malloced_initial);
-	printf("malloced %d bytes for initial solution\n", malloced_initial);
+    printf("malloced %d bytes for initial solution\n", malloced_initial);
     cost_alpha = cost(tg, alpha);
 
     i = 0;
@@ -119,26 +119,26 @@ seqsa_solver(char *stg_filename, char *ssf_filename)
     printf("stopping at i = %d, t = %f.\n", i, t);
 
     /* alpha to schedule */
-	//schedule = new_schedule(tg, alpha, &malloced);
-	schedule = new_schedule(tg, &malloced);
-	printf("malloced %d bytes\n", malloced);
+    //schedule = new_schedule(tg, alpha, &malloced);
+    schedule = new_schedule(tg, &malloced);
+    printf("malloced %d bytes\n", malloced);
 
     /* Display Results */
-	print_schedule(schedule);
-	write_schedule_to_file(ssf_filename, schedule, status);
+    print_schedule(schedule);
+    write_schedule_to_file(ssf_filename, schedule, status);
 
-	/* Free data structures. */
-	free_schedule(schedule, &freed);
+    /* Free data structures. */
+    free_schedule(schedule, &freed);
     // TODO free initial solution
-	free_status(status, &freed);
-	free_task_graph(tg, &freed);
-	printf("freed %d bytes => ", freed);
-	if (malloced == freed)
-		printf("OK.\n");
-	else {
-		printf("Error: malloced != freed!\n");
-		return (1);
-	}
+    free_status(status, &freed);
+    free_task_graph(tg, &freed);
+    printf("freed %d bytes => ", freed);
+    if (malloced == freed)
+        printf("OK.\n");
+    else {
+        printf("Error: malloced != freed!\n");
+        return (1);
+    }
 
-	return (0);
+    return (0);
 }

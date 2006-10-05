@@ -41,14 +41,14 @@
 int
 is_tg_less(struct stg *tg, int ti_a, int ti_b)
 {
-	int tasks;
-	int t;
-	struct stg_task *ptask;
+    int tasks;
+    int t;
+    struct stg_task *ptask;
 
-	tasks = tg->tasks;
-    //..	
+    tasks = tg->tasks;
+    //..    
 
-	return 1;
+    return 1;
 }
 
 
@@ -67,28 +67,28 @@ is_tg_less(struct stg *tg, int ti_a, int ti_b)
 int
 is_tinsert_ok(struct stg *tg, int tindex_new, int pos, int ti_list[])
 {
-	int tasks;
-	int t;
-	int tindex;
+    int tasks;
+    int t;
+    int tindex;
 
-	assert(tg != NULL);
-	tasks = tg->tasks;
+    assert(tg != NULL);
+    tasks = tg->tasks;
 
-	assert(0 <= tindex_new && tindex_new < tasks);
-	assert(0 <= pos && pos <= tasks);
+    assert(0 <= tindex_new && tindex_new < tasks);
+    assert(0 <= pos && pos <= tasks);
 
-	for (t = 0; t < pos; t++) {
-		tindex = ti_list[t];
-		if (!is_tg_less(tg, tindex, tindex_new)) {
-			return 0;
-		}
-	}
-	for (t = pos; t < tasks; t++) {
-		tindex = ti_list[t];
-		if (!is_tg_less(tg, tindex_new, tindex)) {
-			return 0;
-		}
-	}
+    for (t = 0; t < pos; t++) {
+        tindex = ti_list[t];
+        if (!is_tg_less(tg, tindex, tindex_new)) {
+            return 0;
+        }
+    }
+    for (t = pos; t < tasks; t++) {
+        tindex = ti_list[t];
+        if (!is_tg_less(tg, tindex_new, tindex)) {
+            return 0;
+        }
+    }
         
-	return 1;
+    return 1;
 }

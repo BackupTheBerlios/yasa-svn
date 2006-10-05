@@ -42,52 +42,52 @@
 struct ssf*
 new_schedule(struct stg *tg, int *malloced)
 {
-	int msize;
-	struct ssf *schedule;
+    int msize;
+    struct ssf *schedule;
 
-	int tasks;
-	int t;
-	struct ssf_task *ptask;
+    int tasks;
+    int t;
+    struct ssf_task *ptask;
 
 
-	/* Allocate header structure. */
-	msize = sizeof(struct ssf);
-	if ((schedule = malloc(msize)) == NULL) {
-		printf("can't allocate memory!\n");
-		exit(EX_OSERR);
-	}
-	*malloced += msize;
+    /* Allocate header structure. */
+    msize = sizeof(struct ssf);
+    if ((schedule = malloc(msize)) == NULL) {
+        printf("can't allocate memory!\n");
+        exit(EX_OSERR);
+    }
+    *malloced += msize;
 
-	schedule->procs = tg->procs;
-	tasks = tg->tasks;
-	schedule->tasks = tasks;
+    schedule->procs = tg->procs;
+    tasks = tg->tasks;
+    schedule->tasks = tasks;
 
-	/* Allocate memory for task information. */
-	msize = tasks * sizeof(struct ssf_task*);
-	if ((schedule->task = malloc(msize)) == NULL) {
-		printf("can't allocate memory!\n");
-		exit(EX_OSERR);
-	}
-	*malloced += msize;
+    /* Allocate memory for task information. */
+    msize = tasks * sizeof(struct ssf_task*);
+    if ((schedule->task = malloc(msize)) == NULL) {
+        printf("can't allocate memory!\n");
+        exit(EX_OSERR);
+    }
+    *malloced += msize;
 
-	for (t = 0; t < tasks; t++) {
-		/* Allocate. */
-		msize = sizeof(struct ssf_task);
-		if ((ptask = malloc(msize)) == NULL) {
-			printf("can't allocate memory!\n");
-			exit(EX_OSERR);
-		}
-		*malloced += msize;
-		schedule->task[t] = ptask;
+    for (t = 0; t < tasks; t++) {
+        /* Allocate. */
+        msize = sizeof(struct ssf_task);
+        if ((ptask = malloc(msize)) == NULL) {
+            printf("can't allocate memory!\n");
+            exit(EX_OSERR);
+        }
+        *malloced += msize;
+        schedule->task[t] = ptask;
 
-		/* Initialize. */
-		ptask->tindex = t;
-		ptask->proc = -1;
-		ptask->start = -1;
-		ptask->end = -1;
-	}
+        /* Initialize. */
+        ptask->tindex = t;
+        ptask->proc = -1;
+        ptask->start = -1;
+        ptask->end = -1;
+    }
 
-	return (schedule);
+    return (schedule);
 }
 
 
@@ -97,27 +97,27 @@ new_schedule(struct stg *tg, int *malloced)
 void
 print_schedule(struct ssf *schedule)
 {
-	int tasks;
-	int t;
-	struct ssf_task *ptask;
+    int tasks;
+    int t;
+    struct ssf_task *ptask;
 
-	if (schedule == NULL) {
-		printf("Error: can't print schedule (invalid pointer)\n");
-		return;
-	}
-	printf("schedule = [\n");
-	/* header */
-	printf("  procs: %d\n", schedule->procs);
-	tasks = schedule->tasks;
-	printf("  tasks: %d\n", tasks);
-	/* tasks */
-	for (t = 0; t < tasks; t++) {
-		ptask = schedule->task[t];
-		printf("  task %d: proc = %d, start = %d, end = %d\n",
-		       ptask->tindex, ptask->proc, ptask->start, ptask->end);
-	}
-	/* TODO status */
-	printf("]\n");
+    if (schedule == NULL) {
+        printf("Error: can't print schedule (invalid pointer)\n");
+        return;
+    }
+    printf("schedule = [\n");
+    /* header */
+    printf("  procs: %d\n", schedule->procs);
+    tasks = schedule->tasks;
+    printf("  tasks: %d\n", tasks);
+    /* tasks */
+    for (t = 0; t < tasks; t++) {
+        ptask = schedule->task[t];
+        printf("  task %d: proc = %d, start = %d, end = %d\n",
+               ptask->tindex, ptask->proc, ptask->start, ptask->end);
+    }
+    /* TODO status */
+    printf("]\n");
 }
 
 
@@ -127,44 +127,44 @@ print_schedule(struct ssf *schedule)
 void
 write_schedule_to_file(char *fn, struct ssf *schedule, struct ssf_status *status)
 {
-	FILE *fd;
-	int line_number;
+    FILE *fd;
+    int line_number;
 
-	int tasks;
-	int t;
-	struct ssf_task *ptask;
+    int tasks;
+    int t;
+    struct ssf_task *ptask;
 
-	assert(fn != NULL);
-	assert(schedule != NULL);
-	assert(status != NULL);
+    assert(fn != NULL);
+    assert(schedule != NULL);
+    assert(status != NULL);
 
-	printf("writing '%s' .. ", fn);
-	if ((fd = fopen(fn, "w")) == NULL) {
-		printf("can't open '%s'!\n", fn);
-		exit(EX_IOERR);
-	}
+    printf("writing '%s' .. ", fn);
+    if ((fd = fopen(fn, "w")) == NULL) {
+        printf("can't open '%s'!\n", fn);
+        exit(EX_IOERR);
+    }
 
-	line_number = 0;
+    line_number = 0;
 
-	/* Write schedule. */
-	fprintf(fd, "%d %d\n", schedule->tasks, schedule->procs);
-	line_number++;
+    /* Write schedule. */
+    fprintf(fd, "%d %d\n", schedule->tasks, schedule->procs);
+    line_number++;
 
-	tasks = schedule->tasks;
-	for (t = 0; t < tasks; t++) {
-		ptask = schedule->task[t];
-		fprintf(fd, "%d %d %d %d\n",
-			ptask->tindex, ptask->proc, ptask->start, ptask->end);
-		line_number++;
-	}
+    tasks = schedule->tasks;
+    for (t = 0; t < tasks; t++) {
+        ptask = schedule->task[t];
+        fprintf(fd, "%d %d %d %d\n",
+            ptask->tindex, ptask->proc, ptask->start, ptask->end);
+        line_number++;
+    }
 
-	/* Write status line. */
-	fprintf(fd, "#%s\n", status->name);
-	line_number++;
+    /* Write status line. */
+    fprintf(fd, "#%s\n", status->name);
+    line_number++;
 
-	/* Finish writing. */
-	fclose(fd);
-	printf("done. (wrote %d lines)\n", line_number);
+    /* Finish writing. */
+    fclose(fd);
+    printf("done. (wrote %d lines)\n", line_number);
 }
 
 
@@ -174,27 +174,27 @@ write_schedule_to_file(char *fn, struct ssf *schedule, struct ssf_status *status
 void
 free_schedule(struct ssf *schedule, int *freed)
 {
-	int tasks;
-	int t;
-	struct ssf_task *ptask;
+    int tasks;
+    int t;
+    struct ssf_task *ptask;
 
-	tasks = schedule->tasks;
-	for (t = 0; t < tasks; t++) {
-		ptask = schedule->task[t];
-		/* Free task info. */
-		*freed += sizeof(struct ssf_task);
-		free(ptask);
-	}
-	/* Free array of task info pointers. */
-	*freed += tasks * sizeof(struct ssf_task*);
-	free(schedule->task);
+    tasks = schedule->tasks;
+    for (t = 0; t < tasks; t++) {
+        ptask = schedule->task[t];
+        /* Free task info. */
+        *freed += sizeof(struct ssf_task);
+        free(ptask);
+    }
+    /* Free array of task info pointers. */
+    *freed += tasks * sizeof(struct ssf_task*);
+    free(schedule->task);
 
-	/* Free schedule header. */
-	*freed += sizeof(struct ssf);
-	free(schedule);
+    /* Free schedule header. */
+    *freed += sizeof(struct ssf);
+    free(schedule);
 
-	/* Ensure that the given pointer points nowhere. */
-	schedule = NULL;
+    /* Ensure that the given pointer points nowhere. */
+    schedule = NULL;
 }
 
 
@@ -204,18 +204,18 @@ free_schedule(struct ssf *schedule, int *freed)
 struct ssf_status*
 new_status(int *malloced)
 {
-	int msize;
-	struct ssf_status* status;
+    int msize;
+    struct ssf_status* status;
 
-	/* Allocate. */
-	msize = sizeof(struct ssf_status);
-	if ((status = malloc(msize)) == NULL) {
-		printf("can't allocate memory!\n");
-		exit(EX_OSERR);
-	}
-	*malloced += msize;
+    /* Allocate. */
+    msize = sizeof(struct ssf_status);
+    if ((status = malloc(msize)) == NULL) {
+        printf("can't allocate memory!\n");
+        exit(EX_OSERR);
+    }
+    *malloced += msize;
 
-	return (status);
+    return (status);
 }
 
 
@@ -225,8 +225,8 @@ new_status(int *malloced)
 void
 free_status(struct ssf_status *status, int *freed)
 {
-	*freed += sizeof(struct ssf_status);
-	free(status);
+    *freed += sizeof(struct ssf_status);
+    free(status);
 }
 
 
@@ -261,12 +261,12 @@ void new_iss(struct stg *tg, struct iss *s, int *malloced)
 
     for (p = 0; p < procs; p++) {
         msize = sizeof(struct iss_proc);
-		if ((pproc = malloc(msize)) == NULL) {
-			printf("can't allocate memory!\n");
-			exit(EX_OSERR);
-		}
-		*malloced += msize;
-		s->proc[p] = pproc;
+        if ((pproc = malloc(msize)) == NULL) {
+            printf("can't allocate memory!\n");
+            exit(EX_OSERR);
+        }
+        *malloced += msize;
+        s->proc[p] = pproc;
 
         pproc->proc = p;
         pproc->tasks = 0;

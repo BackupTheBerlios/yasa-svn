@@ -41,48 +41,48 @@
 int
 worstcase_solver(char *stg_filename, char *ssf_filename)
 {
-	int malloced;
-	int freed;
+    int malloced;
+    int freed;
 
-	struct stg *tg;
-	struct ssf_status *status;
-	struct ssf *schedule;
+    struct stg *tg;
+    struct ssf_status *status;
+    struct ssf *schedule;
 
-	int ok;
+    int ok;
         int tlist[] = { 2, 3, 4};
 
-	printf("** Worst Case Solver\n");
+    printf("** Worst Case Solver\n");
 
         /* Allocate data structures. */
-	malloced = 0;
-	freed = 0;
+    malloced = 0;
+    freed = 0;
         tg = new_task_graph_from_file(stg_filename, &malloced);
-	status = new_status(&malloced);
-	strncpy(status->name, "YASA worstcase", 20);
-	schedule = new_schedule(tg, &malloced);
-	printf("malloced %d bytes\n", malloced);
+    status = new_status(&malloced);
+    strncpy(status->name, "YASA worstcase", 20);
+    schedule = new_schedule(tg, &malloced);
+    printf("malloced %d bytes\n", malloced);
 
-	/* Solve. */
-	print_task_graph(tg);
-	printf("twiddle. twiddle, crunch, crunch..\n");
+    /* Solve. */
+    print_task_graph(tg);
+    printf("twiddle. twiddle, crunch, crunch..\n");
 
         ok = is_tinsert_ok(tg, 1, 0, tlist);
-	printf("is_tinsert_ok = %u\n", ok);
+    printf("is_tinsert_ok = %u\n", ok);
 
-	print_schedule(schedule);
-	write_schedule_to_file(ssf_filename, schedule, status);
+    print_schedule(schedule);
+    write_schedule_to_file(ssf_filename, schedule, status);
 
-	/* Free data structures. */
-	free_schedule(schedule, &freed);
-	free_status(status, &freed);
-	free_task_graph(tg, &freed);
-	printf("freed %d bytes => ", freed);
-	if (malloced == freed)
-		printf("OK.\n");
-	else {
-		printf("Error: malloced != freed!\n");
-		return (1);
-	}
+    /* Free data structures. */
+    free_schedule(schedule, &freed);
+    free_status(status, &freed);
+    free_task_graph(tg, &freed);
+    printf("freed %d bytes => ", freed);
+    if (malloced == freed)
+        printf("OK.\n");
+    else {
+        printf("Error: malloced != freed!\n");
+        return (1);
+    }
 
-	return (0);
+    return (0);
 }

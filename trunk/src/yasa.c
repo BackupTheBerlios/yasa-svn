@@ -59,14 +59,14 @@ main(int argc, char* argv[])
     case 0:
         ssf_name = "simple-worstcase.ssf";
         rc = worstcase_solver(stg_name, ssf_name);
-		break;
+        break;
     case 1:
         ssf_name = "simple-seqsa.ssf";     
         rc = seqsa_solver(stg_name, ssf_name);
         break;
     default:
-		printf("error: unknown solver %d!\n", solver);
-		rc = 1;
-	}
-	return (rc);
+        printf("error: unknown solver %d!\n", solver);
+        rc = 1;
+    }
+    return (rc);
 }
