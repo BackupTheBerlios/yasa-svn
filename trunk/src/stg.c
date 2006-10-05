@@ -26,6 +26,7 @@
  * SUCH DAMAGE.
  */
 
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -40,11 +41,11 @@ static void read_line_from_file(FILE *fd, char *line, int line_size, int *line_n
 /*
  * Read stg file and allocate memory for the task graph data structure.
  */
-struct stg*
+struct stg *
 new_task_graph_from_file(char *fn, int *malloced)
 {
 	FILE *fd;
-
+    
 	int msize;
 
 	struct stg *tg;
@@ -57,16 +58,18 @@ new_task_graph_from_file(char *fn, int *malloced)
 	int tasks;
 	int procs;
 
-        int t;
-	struct stg_task* ptask;
+    int t;
+    struct stg_task* ptask;
 	int tindex;
-        int ptime;
+    int ptime;
 	int preds;
 
 	int p;
 	struct stg_pred* ppred;
 	int ctime;
 
+	assert(fn != NULL);
+	assert(malloced != NULL);
 
 	printf("reading '%s' .. ", fn);
 	if ((fd = fopen(fn, "r")) == NULL) {
@@ -141,11 +144,11 @@ new_task_graph_from_file(char *fn, int *malloced)
 		*malloced += msize;
 		tg->task[t] = ptask;
 
-                /* Read task line. */
+        /* Read task line. */
 		read_line_from_file(fd, line, sizeof(line), &line_number, 1);
 
-                /* Parse. */
-                count = sscanf(line, "%d %d %d", &tindex, &ptime, &preds);
+        /* Parse. */
+        count = sscanf(line, "%d %d %d", &tindex, &ptime, &preds);
 		switch (count) {
 		case EOF:
 		case 0:
@@ -163,6 +166,7 @@ new_task_graph_from_file(char *fn, int *malloced)
 			exit(EX_DATAERR);
 			/* NOTREACHED */
 		case 3:
+            /* Number of args is fine. */
 			if (tindex != t) {
 				printf("read 'tindex' (%d) but expected value %d on line %d!\n",
 				       tindex, t, line_number);
@@ -184,6 +188,7 @@ new_task_graph_from_file(char *fn, int *malloced)
 			ptask->tindex = tindex;
 			ptask->ptime = ptime;
 			ptask->preds = preds;
+            ptask->height = -1;
 			break;
 		default:
 			printf("internal error while reading line %d!\n",
@@ -191,7 +196,7 @@ new_task_graph_from_file(char *fn, int *malloced)
 			exit(EX_SOFTWARE);
 			/* NOTREACHED */
 		}
-
+        
 		/* Allocate memory for predecessor information. */
 		msize = ptask->preds * sizeof(struct stg_pred*);
 		if ((ptask->pred = malloc(msize)) == NULL) {
@@ -199,7 +204,7 @@ new_task_graph_from_file(char *fn, int *malloced)
 			exit(EX_OSERR);
 		}
 		*malloced += msize;
-
+        
 		/* Read preds. */
 		for (p = 0; p < ptask->preds; p++) {
 			/* Allocate. */
@@ -210,13 +215,13 @@ new_task_graph_from_file(char *fn, int *malloced)
 			}
 			*malloced += msize;
 			ptask->pred[p] = ppred;
-
+            
 			/* Read preds line. */
 			read_line_from_file(fd, line, sizeof(line), &line_number, 1);
 			
 			/* Parse. */
 			count = sscanf(line, "%d %d", &tindex, &ctime);
-
+            
 			switch (count) {
 			case EOF:
 			case 0:
@@ -254,9 +259,9 @@ new_task_graph_from_file(char *fn, int *malloced)
 	}
 
 	/*
-         * We expect the status line to be the first #-comment line behind the
+     * We expect the status line to be the first #-comment line behind the
 	 * task graph definitions.
-         */
+     */
 	read_line_from_file(fd, line, sizeof(line), &line_number, 0);
 
 	/* Finish reading. */
@@ -268,6 +273,9 @@ new_task_graph_from_file(char *fn, int *malloced)
 		printf("old status: [%s]\n", line);
 		/* .. */
 	}
+
+    /* Calculate and add topological height. */
+    add_height(tg);
 
 	return (tg);
 }
@@ -282,6 +290,11 @@ read_line_from_file(FILE *fd, char *line, int line_size, int *line_number, int i
 {
 	char *s;
 	int len;
+
+	assert(fd != NULL);
+	assert(line != NULL);
+	assert(line_size > 0);
+	assert(line_number != NULL);
 
 	do {
 		(*line_number)++;
@@ -302,6 +315,81 @@ read_line_from_file(FILE *fd, char *line, int line_size, int *line_number, int i
 }
 
 
+/* 
+ * Add topological height. 
+ */
+void 
+add_height(struct stg *tg) 
+{ 
+    int tasks;
+    int t;
+    struct stg_task* ptask;
+
+    tasks = tg->tasks;
+
+	for (t = 0; t < tasks; t++) {
+		ptask = tg->task[t];
+        ptask->height = height(tg, ptask);
+	}
+}
+
+
+/*
+ * Calculate topological height of task *ptask.
+ */
+int 
+height(struct stg *tg, struct stg_task *ptask)
+{
+    int preds;
+    int p;
+    struct stg_pred *ppred;
+    int tindex;
+    struct stg_task *ptask2;
+    int h;
+    int h_max;
+
+    preds = ptask->preds;
+    if (preds == 0) {
+        return 0;
+    }
+
+    h_max = -2;
+
+    for (p = 0; p < preds; p++) {
+        ppred = ptask->pred[p];
+        tindex = ppred->tindex;
+        ptask2 = find_tindex(tg, tindex);
+        h = ptask2->height;
+        if (h < 0) {
+            h = height(tg, ptask2);
+        }
+        if (h > h_max) {
+            h_max = h;
+        }
+    }
+    return 1 + h_max;
+}
+
+
+struct stg_task* 
+find_tindex(struct stg *tg, int tindex) 
+{
+    int tasks;
+    int t;
+    struct stg_task* ptask;
+
+    tasks = tg->tasks;
+
+	for (t = 0; t < tasks; t++) {
+		ptask = tg->task[t];
+        if (tindex == ptask->tindex) {
+            return ptask;
+        }
+	}
+    return NULL;
+}
+
+
 /*
  * Print task graph on standard output.
  */
@@ -316,10 +404,8 @@ print_task_graph(struct stg *tg)
 	int p;
 	struct stg_pred *ppred;
 
-	if (tg == NULL) {
-		printf("Error: can't print tg (invalid pointer)\n");
-		return;
-	}
+	assert(tg != NULL);
+
 	printf("tg = [\n");
 	/* header */
 	printf("  procs: %d\n", tg->procs);
@@ -329,8 +415,8 @@ print_task_graph(struct stg *tg)
 	for (t = 0; t < tasks; t++) {
 		ptask = tg->task[t];
 		preds = ptask->preds;
-		printf("  task %d: ptime = %d, preds = %d\n",
-		       ptask->tindex, ptask->ptime, preds);
+		printf("  task %d: ptime = %d, preds = %d, height = %d\n",
+		       ptask->tindex, ptask->ptime, preds, ptask->height);
 		/* predecessors */
 		for (p = 0; p < preds; p++) {
 			ppred = ptask->pred[p];
@@ -356,6 +442,9 @@ free_task_graph(struct stg *tg, int *freed)
 	int p;
 	struct stg_pred *ppred;
 
+	assert(tg != NULL);
+	assert(freed != NULL);
+
 	tasks = tg->tasks;
 	for (t = 0; t < tasks; t++) {
 		ptask = tg->task[t];
@@ -367,8 +456,8 @@ free_task_graph(struct stg *tg, int *freed)
 			free(ppred);
 		}
 		/* Free array of pred info pointers. */
-                *freed += preds * sizeof(struct stg_pred*);
-                free(ptask->pred);
+        *freed += preds * sizeof(struct stg_pred*);
+        free(ptask->pred);
 
 		/* Free task info. */
 		*freed += sizeof(struct stg_task);

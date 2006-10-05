@@ -32,14 +32,17 @@
 #include "stg.h"
 
 
-/* Schedule. */
+/* 
+ * Schedule, as used in the ssf output file.
+ */
+
+/* ssf + tasks * ssf_task */
 struct ssf {
 	int             tasks;   /* Number of tasks. (TPE: Target Processing Elements) */
 	int             procs;   /* Number of processors. */
 	struct ssf_task **task;  /* Array of task entries. */
 };
 
-/* Info per task. */
 struct ssf_task {
 	int tindex;  /* Task index. */
 	int proc;    /* Executing processor. */
@@ -74,6 +77,22 @@ struct ssf_status {
 };
 
 
+/*
+ * Internal schedule structure.
+ */
+
+struct iss {
+	int             procs;   /* Number of processors. */    
+	struct iss_proc **proc;  /* Array of proc entries. */
+};
+
+struct iss_proc {
+	int  proc;   /* Executing processor. */
+	int  tasks;  /* Number of tasks. */
+    int* task;   /* Array of task indices. */
+};
+
+
 extern struct ssf* new_schedule(struct stg *tg, int *malloced);
 extern void print_schedule(struct ssf *schedule);
 extern void write_schedule_to_file(char *fn, struct ssf *schedule, struct ssf_status *status);
@@ -81,5 +100,14 @@ extern void free_schedule(struct ssf *schedule, int *freed);
 
 extern struct ssf_status* new_status(int *malloced);
 extern void free_status(struct ssf_status *status, int *freed);
+
+extern void new_iss(struct stg *tg, struct iss *s, int *malloced);
+
+extern void create_initial_solution(struct stg *tg, struct iss *alpha, int *malloced);
+extern double cost(struct stg *tg, struct iss *s);
+extern void select_neighbour(struct stg *tg, struct iss *alpha, struct iss *beta);
+extern double get_random(void);
+extern double boltzmann_factor(double t, double cost_alpha, double cost_beta);
+extern double new_temp(double t, int i);
 
 #endif

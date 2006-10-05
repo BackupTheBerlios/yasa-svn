@@ -1,5 +1,5 @@
 /*-
- * Worst Case Solver
+ * Sequential Simulated Annealing Solver
  *
  * Copyright (c) 2006 Marc van Woerkom <http://yasa.berlios.de>
  * All rights reserved.
@@ -26,54 +26,110 @@
  * SUCH DAMAGE.
  */
 
+#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 
 #include "ssf.h"
 #include "stg.h"
 #include "tsort.h"
-#include "worstcase.h"
+
+#include "seqsa.h"
 
 
 /*
- * The worst case solver assigns all tasks to one processor.
+ * Sequential version.
  */
 int
-worstcase_solver(char *stg_filename, char *ssf_filename)
+seqsa_solver(char *stg_filename, char *ssf_filename)
 {
 	int malloced;
 	int freed;
+
+    int malloced_initial;
 
 	struct stg *tg;
 	struct ssf_status *status;
 	struct ssf *schedule;
 
-	int ok;
-        int tlist[] = { 2, 3, 4};
+    double eps;
+    unsigned seed;
 
-	printf("** Worst Case Solver\n");
+    int i;
+    double t0;
+    double t;
 
-        /* Allocate data structures. */
+    struct iss *alpha;  /* present solution */
+    struct iss *beta;   /* neighbour solution of alpha */
+
+    double cost_alpha;
+    double cost_beta;
+
+    double r;
+    double bf;  /* Boltzmann Factor p(alpha -> beta) */
+
+
+	printf("** Sequential Simulated Annealing Solver\n");
+
+    /* Allocate data structures. */
 	malloced = 0;
 	freed = 0;
-        tg = new_task_graph_from_file(stg_filename, &malloced);
+    tg = new_task_graph_from_file(stg_filename, &malloced);
 	status = new_status(&malloced);
-	strncpy(status->name, "YASA worstcase", 20);
+	strncpy(status->name, "YASA Sequential", 20);
+
+    eps = 1e-3;
+    seed = 0;
+    t0 = 1000.0;
+
+    alpha = NULL;
+    beta = NULL;
+
+	/* Solve. */
+    srand(seed);
+	print_task_graph(tg);
+
+    malloced_initial = 0;
+    create_initial_solution(tg, alpha, &malloced_initial);
+	printf("malloced %d bytes for initial solution\n", malloced_initial);
+    cost_alpha = cost(tg, alpha);
+
+    i = 0;
+    t = t0;
+    
+    while (t > eps) {
+        printf("i = %d, t = %f\n", i, t);
+        select_neighbour(tg, alpha, beta);
+        cost_beta = cost(tg, beta);
+        if (cost_beta <= cost_alpha) {
+            /* TODO alpha := beta */
+            cost_alpha = cost_beta;
+        } else {
+            r = get_random();  /* r from (0, 1) */
+            bf = boltzmann_factor(t, cost_alpha, cost_beta);
+            printf("r = %f, bf = %f\n", r, bf);
+            if (r < bf) {
+                /* TODO alpha := beta */
+                cost_alpha = cost_beta;
+            }
+        }
+        i++;
+        t = new_temp(t, i);
+    }
+    printf("stopping at i = %d, t = %f.\n", i, t);
+
+    /* alpha to schedule */
+	//schedule = new_schedule(tg, alpha, &malloced);
 	schedule = new_schedule(tg, &malloced);
 	printf("malloced %d bytes\n", malloced);
 
-	/* Solve. */
-	print_task_graph(tg);
-	printf("twiddle. twiddle, crunch, crunch..\n");
-
-        ok = is_tinsert_ok(tg, 1, 0, tlist);
-	printf("is_tinsert_ok = %u\n", ok);
-
+    /* Display Results */
 	print_schedule(schedule);
 	write_schedule_to_file(ssf_filename, schedule, status);
 
 	/* Free data structures. */
 	free_schedule(schedule, &freed);
+    // TODO free initial solution
 	free_status(status, &freed);
 	free_task_graph(tg, &freed);
 	printf("freed %d bytes => ", freed);

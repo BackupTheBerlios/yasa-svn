@@ -26,6 +26,8 @@
  * SUCH DAMAGE.
  */
 
+#include <assert.h>
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sysexits.h>
@@ -33,8 +35,9 @@
 #include "ssf.h"
 
 
-/*
- * New schedule.
+/* 
+ * Return a new schedule structure for a given task graph 'tg',
+ * return malloced chars.
  */
 struct ssf*
 new_schedule(struct stg *tg, int *malloced)
@@ -56,8 +59,8 @@ new_schedule(struct stg *tg, int *malloced)
 	*malloced += msize;
 
 	schedule->procs = tg->procs;
-	schedule->tasks = tg->tasks;
 	tasks = tg->tasks;
+	schedule->tasks = tasks;
 
 	/* Allocate memory for task information. */
 	msize = tasks * sizeof(struct ssf_task*);
@@ -119,7 +122,7 @@ print_schedule(struct ssf *schedule)
 
 
 /*
- * Write schedule to file.
+ * Write schedule and its status to file 'fn'.
  */
 void
 write_schedule_to_file(char *fn, struct ssf *schedule, struct ssf_status *status)
@@ -131,6 +134,9 @@ write_schedule_to_file(char *fn, struct ssf *schedule, struct ssf_status *status
 	int t;
 	struct ssf_task *ptask;
 
+	assert(fn != NULL);
+	assert(schedule != NULL);
+	assert(status != NULL);
 
 	printf("writing '%s' .. ", fn);
 	if ((fd = fopen(fn, "w")) == NULL) {
@@ -221,4 +227,146 @@ free_status(struct ssf_status *status, int *freed)
 {
 	*freed += sizeof(struct ssf_status);
 	free(status);
+}
+
+
+/* 
+ * Create a new internal schedule struct, with empty task lists. 
+ */
+void new_iss(struct stg *tg, struct iss *s, int *malloced)
+{
+    int msize;
+    int procs;
+    int p;
+    struct iss_proc *pproc;
+    
+    /* Allocate header structure. */
+    msize = sizeof(struct iss);
+    if ((s = malloc(msize)) == NULL) {
+        printf("can't allocate memory!\n");
+        exit(EX_OSERR);
+    }
+    *malloced += msize;
+    
+    procs = tg->procs;
+    s->procs = procs;
+
+    /* Allocate memory for processor list structures. */
+    msize = procs * sizeof(struct iss_proc*);
+    if ((s->proc = malloc(msize)) == NULL) {
+        printf("can't allocate memory!\n");
+        exit(EX_OSERR);
+    }
+    *malloced += msize;
+
+    for (p = 0; p < procs; p++) {
+        msize = sizeof(struct iss_proc);
+		if ((pproc = malloc(msize)) == NULL) {
+			printf("can't allocate memory!\n");
+			exit(EX_OSERR);
+		}
+		*malloced += msize;
+		s->proc[p] = pproc;
+
+        pproc->proc = p;
+        pproc->tasks = 0;
+        pproc->task = NULL;
+    }
+    /* All processor lists are there now and empty. */
+}
+
+
+/*
+ * Create initial solution.
+ */
+
+void 
+create_initial_solution(struct stg *tg, struct iss *alpha, int *malloced)
+{
+    printf("creating initial solution\n");
+
+    /* Create a new internal schedule struct, with empty task lists. */
+    new_iss(tg, alpha, malloced);
+
+    /* TODO implement algorithm Generate-Schedule from Hou/Ren. */
+    
+    /* GS1: Calculate height' for task graph. */
+    /* GS2: Calculate sets G(height') of nodes. */
+    /* GS3: For p-1 processors do GS4. */
+    /* GS4: Form schedule for a processor. */
+    /* GS5: Assign remaining nodes to last processor. */
+}
+
+
+/*
+ * Calculate the cost of a given schedule s.
+ */
+double cost(struct stg *tg, struct iss *s)
+{
+    /* TODO */
+    return 0.0;
+}
+
+
+/*
+ * Pick a neigbour of alpha, return it in beta.
+ *
+ * THIS IMPLICITLY DEFINES THE NEIGHBOURHOOD CONCEPT OF THE PROBLEM!
+ */
+void
+select_neighbour(struct stg *tg, struct iss *alpha, struct iss *beta)
+{
+    /* TODO */
+    beta = NULL;
+}
+
+
+/*
+ * Get random r, with 0 < r < 1.
+ */
+double get_random()
+{
+    double r;
+    int ri;
+
+    ri = rand();
+    if ((ri == 0) || (ri == RAND_MAX)) {
+        printf("get_random: got %d\n", ri);
+        return get_random();  /* try again */
+    }
+
+    r = ((double) ri) / RAND_MAX;
+    return r;
+}
+
+
+/*
+ * Calculate Boltzmann Factor, i.e. the probability
+ * of a transition from alpha to beta.
+ */
+double
+boltzmann_factor(double t, double cost_alpha, double cost_beta)
+{
+    double bf;
+    double dE;
+
+    dE = cost_beta - cost_alpha;
+    bf = exp(-dE / t);
+    
+    return bf;
+}
+
+
+/*
+ * Temperature Reduction Function.
+ */
+double new_temp(double t, int i)
+{
+    double r;
+    double t_new;
+
+    r = 0.9;  /* typically 0.8 <= r <= 0.99 */
+    t_new = r * t;
+
+    return t_new;
 }

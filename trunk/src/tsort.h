@@ -1,5 +1,5 @@
 /*-
- * STG (Standard Task Graph) Format
+ * Topological Sorting
  *
  * Copyright (c) 2006 Marc van Woerkom <http://yasa.berlios.de>
  * All rights reserved.
@@ -26,39 +26,9 @@
  * SUCH DAMAGE.
  */
 
-#if (!defined(_STG_H_))
-#define _STG_H_
+#if (!defined(_TSORT_H_))
+#define _TSORT_H_
 
-
-/* Standard task graph. */
-struct stg {
-	int             tasks;   /* Number of tasks. (TPE: Target Processing Elements) */
-	int             procs;   /* Number of processors. */
-	struct stg_task **task;  /* Array of task entries. */
-};
-
-/* Info per task. */
-struct stg_task {
-	int             tindex;  /* Task index. */
-	int             ptime;   /* Computation time. */
-	int             preds;   /* Number of predecessors. */
-	struct stg_pred **pred;  /* Array of predecessor entries. */
-    int             height;  /* Topological height */
-};
-
-/* Info per predecessor. */
-struct stg_pred {
-	int tindex;  /* Task index. */
-	int ctime;   /* Communication time. */
-};
-
-
-extern struct stg *new_task_graph_from_file(char *fn, int *malloced);
-extern void print_task_graph(struct stg *tg);
-extern void free_task_graph(struct stg *tg, int *freed);
-
-extern void add_height(struct stg *tg);
-extern int height(struct stg *tg, struct stg_task *ptask);
-extern struct stg_task* find_tindex(struct stg *tg, int tindex);
+extern int is_tinsert_ok(struct stg *tg, int tindex_new, int pos, int ti_list[]);
 
 #endif

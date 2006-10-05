@@ -1,5 +1,5 @@
 /*-
- * STG (Standard Task Graph) Format
+ * Topological Sorting
  *
  * Copyright (c) 2006 Marc van Woerkom <http://yasa.berlios.de>
  * All rights reserved.
@@ -26,39 +26,69 @@
  * SUCH DAMAGE.
  */
 
-#if (!defined(_STG_H_))
-#define _STG_H_
+#include <assert.h>
+#include <stdlib.h>
+
+#include "stg.h"
+#include "tsort.h"
 
 
-/* Standard task graph. */
-struct stg {
-	int             tasks;   /* Number of tasks. (TPE: Target Processing Elements) */
-	int             procs;   /* Number of processors. */
-	struct stg_task **task;  /* Array of task entries. */
-};
+/*
+ * Check if for task graph 'tg' the task with index 'ti_a' is
+ * allowed to execute before 'ti_b'.
+ */
 
-/* Info per task. */
-struct stg_task {
-	int             tindex;  /* Task index. */
-	int             ptime;   /* Computation time. */
-	int             preds;   /* Number of predecessors. */
-	struct stg_pred **pred;  /* Array of predecessor entries. */
-    int             height;  /* Topological height */
-};
+int
+is_tg_less(struct stg *tg, int ti_a, int ti_b)
+{
+	int tasks;
+	int t;
+	struct stg_task *ptask;
 
-/* Info per predecessor. */
-struct stg_pred {
-	int tindex;  /* Task index. */
-	int ctime;   /* Communication time. */
-};
+	tasks = tg->tasks;
+    //..	
+
+	return 1;
+}
 
 
-extern struct stg *new_task_graph_from_file(char *fn, int *malloced);
-extern void print_task_graph(struct stg *tg);
-extern void free_task_graph(struct stg *tg, int *freed);
+/*
+ * For a given task graph 'tg' (which defines the order relation)
+ * read a list of task indices 'ti_list'.
+ * Return a sorted list or an error.
+ */
 
-extern void add_height(struct stg *tg);
-extern int height(struct stg *tg, struct stg_task *ptask);
-extern struct stg_task* find_tindex(struct stg *tg, int tindex);
 
-#endif
+/*
+ * Check if it is OK for task graph 'tg' to insert a task 'tindex_new' at
+ * position 'pos' into the list of task indices 'tlist'.
+ */
+
+int
+is_tinsert_ok(struct stg *tg, int tindex_new, int pos, int ti_list[])
+{
+	int tasks;
+	int t;
+	int tindex;
+
+	assert(tg != NULL);
+	tasks = tg->tasks;
+
+	assert(0 <= tindex_new && tindex_new < tasks);
+	assert(0 <= pos && pos <= tasks);
+
+	for (t = 0; t < pos; t++) {
+		tindex = ti_list[t];
+		if (!is_tg_less(tg, tindex, tindex_new)) {
+			return 0;
+		}
+	}
+	for (t = pos; t < tasks; t++) {
+		tindex = ti_list[t];
+		if (!is_tg_less(tg, tindex_new, tindex)) {
+			return 0;
+		}
+	}
+        
+	return 1;
+}

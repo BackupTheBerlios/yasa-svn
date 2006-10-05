@@ -28,6 +28,7 @@
 
 #include <stdio.h>
 
+#include "seqsa.h"
 #include "worstcase.h"
 
 
@@ -42,18 +43,29 @@
 int
 main(int argc, char* argv[])
 {
-	int solver;
-	int rc;
+    int solver;
+    char *stg_name;
+    char *ssf_name;
+    int rc;
+    
+    printf("** Hello, this is %s!\n", argv[0]);
+    
+    solver = 1;
+    stg_name = "first.stg";
+    //stg_name = "simple.stg";
 
-	printf("** Hello, this is %s!\n", argv[0]);
-	solver = 0;
-
-	switch (solver) {
-	case 0:
-		rc = worstcase_solver("simple.stg", "simple-worstcase.ssf");
+    /* call _solver(char* stg_name, char* ssf_name); */
+    switch (solver) {
+    case 0:
+        ssf_name = "simple-worstcase.ssf";
+        rc = worstcase_solver(stg_name, ssf_name);
 		break;
-	default:
-		printf("unknown solver %d!\n", solver);
+    case 1:
+        ssf_name = "simple-seqsa.ssf";     
+        rc = seqsa_solver(stg_name, ssf_name);
+        break;
+    default:
+		printf("error: unknown solver %d!\n", solver);
 		rc = 1;
 	}
 	return (rc);
