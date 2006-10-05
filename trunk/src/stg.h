@@ -57,8 +57,4 @@ extern struct stg *new_task_graph_from_file(char *fn, int *malloced);
 extern void print_task_graph(struct stg *tg);
 extern void free_task_graph(struct stg *tg, int *freed);
 
-extern void add_height(struct stg *tg);
-extern int height(struct stg *tg, struct stg_task *ptask);
-extern struct stg_task* find_tindex(struct stg *tg, int tindex);
-
 #endif

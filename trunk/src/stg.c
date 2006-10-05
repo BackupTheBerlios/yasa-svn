@@ -36,6 +36,9 @@
 
 
 static void read_line_from_file(FILE *fd, char *line, int line_size, int *line_number, int ignore);
+static void add_height(struct stg *tg); 
+static int height(struct stg *tg, struct stg_task *ptask);
+static struct stg_task* find_tindex(struct stg *tg, int tindex);
 
 
 /*
@@ -318,7 +321,7 @@ read_line_from_file(FILE *fd, char *line, int line_size, int *line_number, int i
 /* 
  * Add topological height. 
  */
-void 
+static void 
 add_height(struct stg *tg) 
 { 
     int tasks;
@@ -337,7 +340,7 @@ add_height(struct stg *tg)
 /*
  * Calculate topological height of task *ptask.
  */
-int 
+static int 
 height(struct stg *tg, struct stg_task *ptask)
 {
     int preds;
@@ -371,7 +374,7 @@ height(struct stg *tg, struct stg_task *ptask)
 }
 
 
-struct stg_task* 
+static struct stg_task* 
 find_tindex(struct stg *tg, int tindex) 
 {
     int tasks;
