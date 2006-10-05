@@ -30,8 +30,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "ssf.h"
-#include "stg.h"
+#include "sa.h"
 #include "tsort.h"
 
 #include "seqsa.h"

@@ -11,7 +11,7 @@ LDFLAGS=
 
 # program and its parts
 SRCS = yasa.c
-OBJS = seqsa.o ssf.o stg.o tsort.o worstcase.o yasa.o
+OBJS = sa.o seqsa.o ssf.o stg.o tsort.o worstcase.o yasa.o
 LIBS = -lm
 
 
@@ -37,6 +37,7 @@ yasa: $(OBJS)
 	$(CC) $(CFLAGS) $(DEBUG) -c $<
 
 # header dependencies
+sa.c: sa.h ssf.h stg.h
 ssf.c: ssf.h stg.h
 stg.c: stg.h
 tsort.c: stg.h tsort.h

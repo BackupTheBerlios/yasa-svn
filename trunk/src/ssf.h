@@ -103,11 +103,6 @@ extern void free_status(struct ssf_status *status, int *freed);
 
 extern void new_iss(struct stg *tg, struct iss *s, int *malloced);
 
-extern void create_initial_solution(struct stg *tg, struct iss *alpha, int *malloced);
 extern double cost(struct stg *tg, struct iss *s);
-extern void select_neighbour(struct stg *tg, struct iss *alpha, struct iss *beta);
-extern double get_random(void);
-extern double boltzmann_factor(double t, double cost_alpha, double cost_beta);
-extern double new_temp(double t, int i);
 
 #endif
