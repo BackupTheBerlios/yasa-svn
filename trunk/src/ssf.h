@@ -38,16 +38,16 @@
 
 /* ssf + tasks * ssf_task */
 struct ssf {
-	int             tasks;   /* Number of tasks. (TPE: Target Processing Elements) */
-	int             procs;   /* Number of processors. */
-	struct ssf_task **task;  /* Array of task entries. */
+    int             tasks;   /* Number of tasks. (TPE: Target Processing Elements) */
+    int             procs;   /* Number of processors. */
+    struct ssf_task **task;  /* Array of task entries. */
 };
 
 struct ssf_task {
-	int tindex;  /* Task index. */
-	int proc;    /* Executing processor. */
-	int start;   /* Start time. */
-	int end;     /* End time. */
+    int tindex;  /* Task index. */
+    int proc;    /* Executing processor. */
+    int start;   /* Start time. */
+    int end;     /* End time. */
 };
 
 
@@ -56,40 +56,43 @@ struct ssf_task {
  * Line starts with a '#', values are separated by ';'.
  */
 struct ssf_status {
-	char          name[20];       /* Name of the used method, preferably with version. */
-	double        ptime;          /* Computation time. (%.2f) */
-	char          hostname[20];   /* Name of the host machine. */
-	long long int ics;            /* Number of inspected complete schedules. (%lld) */
-	long long int ips;            /* Number of inspected partial schedules. (%lld) */
-	int           impsfirst;      /* Number of improvements of the first found solution. */
-	int           slenfirst;      /* Schedule length of first found solution. */
-	long long int treecuts;       /* Number of search tree cuts. (%lld) */
-	double        avgcutheight;   /* Average cut height. (%.5f) */
-	int           mincutheight;   /* Minimal cut height. */
-	int           bestslen;       /* Best found schedule length. */
-	double        minpsumnode;    /* Minimum computation time sum of a node. (%.2f) */  /* TODO ??? */
-	double        avgpsumnode;    /* Average computation time sum of a node. (%.2f) */
-	double        maxpsumnode;    /* Maximum computation time sum of a node. (%.2f) */
-	long long int msgsbestfound;  /* Number of messages about best found solutions. (%lld) */
-	int           slaves;         /* Number of slave machines. */
-	long long int workpoolsize;   /* Size of workpool. (%lld) */  /* TODO ??? */
-	double        psum;           /* Sum of all parallel computation times. (%.2f) */  /* TODO ??? */
+    char          name[20];       /* Name of the used method, preferably with version. */
+    double        ptime;          /* Computation time. (%.2f) */
+    char          hostname[20];   /* Name of the host machine. */
+    long long int ics;            /* Number of inspected complete schedules. (%lld) */
+    long long int ips;            /* Number of inspected partial schedules. (%lld) */
+    int           impsfirst;      /* Number of improvements of the first found solution. */
+    int           slenfirst;      /* Schedule length of first found solution. */
+    long long int treecuts;       /* Number of search tree cuts. (%lld) */
+    double        avgcutheight;   /* Average cut height. (%.5f) */
+    int           mincutheight;   /* Minimal cut height. */
+    int           bestslen;       /* Best found schedule length. */
+    double        minpsumnode;    /* Minimum computation time sum of a node. (%.2f) */  /* TODO ??? */
+    double        avgpsumnode;    /* Average computation time sum of a node. (%.2f) */
+    double        maxpsumnode;    /* Maximum computation time sum of a node. (%.2f) */
+    long long int msgsbestfound;  /* Number of messages about best found solutions. (%lld) */
+    int           slaves;         /* Number of slave machines. */
+    long long int workpoolsize;   /* Size of workpool. (%lld) */  /* TODO ??? */
+    double        psum;           /* Sum of all parallel computation times. (%.2f) */  /* TODO ??? */
 };
 
 
 /*
  * Internal schedule structure.
+ *
+ * For each processor we have a list of tasks.
+ * We memorize the cost of the schedule, once it has been computed.
  */
 
 struct iss {
-	int             procs;   /* Number of processors. */    
-	struct iss_proc **proc;  /* Array of proc entries. */
+    int             procs;   /* Number of processors. */
+    struct iss_proc **proc;  /* procs * (Array of proc entries). */
+    int             cost;    /* -1 if not calculated yet. */
 };
 
 struct iss_proc {
-	int  proc;   /* Executing processor. */
-	int  tasks;  /* Number of tasks. */
-    int* task;   /* Array of task indices. */
+    int  tasks;  /* Number of tasks. */
+    int  *task;  /* Array of task indices. */
 };
 
 
@@ -101,8 +104,10 @@ extern void free_schedule(struct ssf *schedule, int *freed);
 extern struct ssf_status* new_status(int *malloced);
 extern void free_status(struct ssf_status *status, int *freed);
 
-extern void new_iss(struct stg *tg, struct iss *s, int *malloced);
+extern struct iss* new_iss(struct stg *tg, int *malloced);
+extern void iss_add(struct iss *s, int p, int tindex, int *malloced, int* freed);
+extern void print_iss(struct stg *tg, struct iss *s);
 
-extern double cost(struct stg *tg, struct iss *s);
+extern int cost(struct stg *tg, struct iss *s);
 
 #endif

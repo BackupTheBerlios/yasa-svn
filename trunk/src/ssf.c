@@ -233,9 +233,11 @@ free_status(struct ssf_status *status, int *freed)
 /* 
  * Create a new internal schedule struct, with empty task lists. 
  */
-void new_iss(struct stg *tg, struct iss *s, int *malloced)
+struct iss* 
+new_iss(struct stg *tg, int *malloced)
 {
     int msize;
+    struct iss* s;
     int procs;
     int p;
     struct iss_proc *pproc;
@@ -268,18 +270,101 @@ void new_iss(struct stg *tg, struct iss *s, int *malloced)
         *malloced += msize;
         s->proc[p] = pproc;
 
-        pproc->proc = p;
         pproc->tasks = 0;
         pproc->task = NULL;
     }
     /* All processor lists are there now and empty. */
+
+    /* No cost known. */
+    s->cost = -1;
+    return s;
+}
+
+
+/*
+ * Add (p, tindex) to iss structure.
+ */
+void 
+iss_add(struct iss *s, int p, int tindex, int* malloced, int* freed)
+{
+    struct iss_proc *pproc;
+    int tasks;
+    int msize;
+    int* task_new;
+
+    /* TODO This sucks, we need higher data structures, e.g. glib! */
+
+    pproc = s->proc[p];
+    tasks = pproc->tasks;
+
+    /* Allocate new list with one more element. */
+    msize = (tasks + 1) * sizeof(int);
+    if ((task_new = malloc(msize)) == NULL) {
+        printf("can't allocate memory!\n");
+        exit(EX_OSERR);
+    }
+    *malloced += msize;
+
+    /* Copy old list. */
+    for (int t = 0; t < tasks; t++) {
+        task_new[t] = pproc->task[t];
+    }
+
+    /* Add new element. */
+    task_new[tasks] = tindex;
+
+    /* Free old list. */
+    msize = tasks * sizeof(int);
+    free(pproc->task);
+    *freed += msize;
+
+    /* Point to new list. */
+    pproc->tasks++;
+    pproc->task = task_new;
+}
+
+
+/* 
+ * Print internal schedule. 
+ */
+void 
+print_iss(struct stg *tg, struct iss *s)
+{
+    int procs;
+    int p;
+
+    struct iss_proc *pproc;
+    int tasks;
+    int t;
+    int tindex;
+
+    procs = s->procs;
+    printf("procs = %d\n", procs);
+
+    for (p = 0; p < procs; p++) {
+        printf("  p = %d:", p);
+
+        pproc = s->proc[p];
+        tasks = pproc->tasks;
+
+        if (tasks == 0) {
+            printf(" <no tasks>");
+        } else {
+            for (t = 0; t < tasks; t++) {
+                tindex = pproc->task[t];
+                printf(" %d (h=%d)", tindex, get_height(tg, tindex));
+            }
+        }
+
+        printf("\n");
+    }
 }
 
 
 /*
  * Calculate the cost of a given schedule s.
  */
-double cost(struct stg *tg, struct iss *s)
+int cost(struct stg *tg, struct iss *s)
 {
     /* TODO */
     return 0.0;

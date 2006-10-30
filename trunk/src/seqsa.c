@@ -46,6 +46,10 @@ seqsa_solver(char *stg_filename, char *ssf_filename)
     int freed;
 
     int malloced_initial;
+    int freed_initial;
+
+    int malloced_select;
+    int freed_select;
 
     struct stg *tg;
     struct ssf_status *status;
@@ -89,8 +93,12 @@ seqsa_solver(char *stg_filename, char *ssf_filename)
     print_task_graph(tg);
 
     malloced_initial = 0;
-    create_initial_solution(tg, alpha, &malloced_initial);
+    freed_initial = 0;
+    alpha = create_initial_solution(tg, &malloced_initial, &freed_initial);
     printf("malloced %d bytes for initial solution\n", malloced_initial);
+    printf("freed %d bytes for initial solution\n", freed_initial);
+    printf("difference: %d bytes\n", malloced_initial - freed_initial);
+
     cost_alpha = cost(tg, alpha);
 
     i = 0;
@@ -98,13 +106,20 @@ seqsa_solver(char *stg_filename, char *ssf_filename)
     
     while (t > eps) {
         printf("i = %d, t = %f\n", i, t);
-        select_neighbour(tg, alpha, beta);
+
+        malloced_select = 0;
+        freed_select = 0;
+        beta = select_neighbour(tg, alpha, &malloced_select, &freed_select);
+        printf("malloced %d bytes for selection\n", malloced_select);
+        printf("freed %d bytes for selection\n", freed_select);
+        printf("difference: %d bytes\n", malloced_select - freed_select);
         cost_beta = cost(tg, beta);
+
         if (cost_beta <= cost_alpha) {
             /* TODO alpha := beta */
             cost_alpha = cost_beta;
         } else {
-            r = get_random();  /* r from (0, 1) */
+            r = get_random_r();  /* r from (0, 1) */
             bf = boltzmann_factor(t, cost_alpha, cost_beta);
             printf("r = %f, bf = %f\n", r, bf);
             if (r < bf) {

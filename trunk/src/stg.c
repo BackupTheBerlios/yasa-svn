@@ -379,7 +379,7 @@ find_tindex(struct stg *tg, int tindex)
 {
     int tasks;
     int t;
-    struct stg_task* ptask;
+    struct stg_task *ptask;
 
     tasks = tg->tasks;
 
@@ -390,6 +390,24 @@ find_tindex(struct stg *tg, int tindex)
         }
     }
     return NULL;
+}
+
+
+
+/*
+ * Return height for task tindex, if not found return -1.
+ */
+int 
+get_height(struct stg *tg, int tindex)
+{
+    struct stg_task *ptask;
+    
+    ptask = find_tindex(tg, tindex);
+    if (ptask == NULL) {
+        return -1;
+    }
+
+    return ptask->height;
 }
 
 

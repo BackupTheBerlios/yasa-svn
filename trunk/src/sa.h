@@ -32,9 +32,10 @@
 #include "ssf.h"
 
 
-extern void create_initial_solution(struct stg *tg, struct iss *alpha, int *malloced);
-extern void select_neighbour(struct stg *tg, struct iss *alpha, struct iss *beta);
-extern double get_random(void);
+extern struct iss* create_initial_solution(struct stg *tg, int *malloced, int *freed);
+extern struct iss* select_neighbour(struct stg *tg, struct iss *alpha, int *malloced, int *freed);
+extern double get_random_r(void);
+extern int get_random(int max);
 extern double boltzmann_factor(double t, double cost_alpha, double cost_beta);
 extern double new_temp(double t, int i);
 
